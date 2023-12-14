@@ -1,0 +1,14 @@
+comment_width = 100
+format_code_in_doc_comments = true
+wrap_comments = true
+newline_style = "Native"
+imports_granularity = "Crate"
+imports_layout = "Vertical"
+reorder_modules = true
+reorder_imports = true
+format_strings = true
+match_block_trailing_comma = true
+reorder_impl_items = true
+use_small_heuristics = "Max"
+group_imports = "StdExternalCrate"
+

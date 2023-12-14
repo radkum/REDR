@@ -1,0 +1,7 @@
+[workspace]
+resolver = "2"
+members = ["modules/cli", "modules/scanner", "modules/sandbox", "modules/ffi/scanner-ffi", "modules/ffi/common"]
+default-members = ["modules/cli", "modules/scanner", "modules/sandbox"]
+
+[profile.release]
+debug = true
