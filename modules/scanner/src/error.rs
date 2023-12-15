@@ -1,17 +1,22 @@
+use signatures::signatures;
 use snafu::Snafu;
 
 #[derive(Snafu, Debug)]
-pub enum SignaturesError {
-    #[snafu(display("{file}"))]
-    FileNotExistsError { file: String },
+pub enum ScanError {
+    #[snafu(display("{error}"))]
+    IoError { error: std::io::Error },
+    #[snafu(display("{error}"))]
+    SignaturesError { error: signatures::SignatureError },
 }
 
-#[derive(thiserror::Error, Debug)]
-pub enum ScanError {
-    #[error("IO error: {0}")]
-    IoError(#[from] std::io::Error),
-    #[error("error: {0}")]
-    SignaturesError(#[from] SignaturesError),
-    // #[error("Some '{0}'")]
-    // Y(String),
+impl From<std::io::Error> for ScanError {
+    fn from(arg: std::io::Error) -> Self {
+        Self::IoError { error: arg }
+    }
+}
+
+impl From<signatures::SignatureError> for ScanError {
+    fn from(arg: signatures::SignatureError) -> Self {
+        Self::SignaturesError { error: arg }
+    }
 }

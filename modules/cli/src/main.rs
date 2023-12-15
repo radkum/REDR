@@ -5,20 +5,57 @@ use std::{
     ffi::OsString,
 };
 
-use clap::Parser;
+use clap::{
+    Parser,
+    Subcommand,
+};
 use log::LevelFilter;
+
+#[derive(clap::Args)]
+pub struct Signature {
+    #[clap(short, long)]
+    pub malware_dir: String,
+    #[clap(short, long)]
+    pub out_path: String,
+}
+
+// #[derive(clap::Args)]
+// pub struct Evaluate {
+//     #[clap(short, long)]
+//     pub sig_path: String,
+//     #[clap(value_name = "PATH")]
+//     pub file_path: String,
+// }
+
+#[derive(Subcommand)]
+enum Commands {
+    /// Build malware signature set
+    Signature {
+        #[clap(short, long)]
+        malware_dir: String,
+        #[clap(short, long)]
+        out_path: String,
+    },
+    /// Evaluate a suspected file
+    Evaluate {
+        #[clap(short, long)]
+        sig_path: String,
+        #[clap(value_name = "PATH")]
+        file_path: String,
+    },
+}
 
 #[derive(Parser)]
 #[clap(author, about)]
-pub struct Commands {
+pub struct Cli {
     /// Increase log message verbosity
     #[clap(short, long, parse(from_occurrences))]
-    pub log_level: u32,
-    #[clap(value_name = "PATH")]
-    pub file_path: String,
+    log_level: u32,
     #[clap(short, long)]
     /// Print version information
-    pub version: bool,
+    version: bool,
+    #[clap(subcommand)]
+    commands: Commands,
 }
 
 fn get_command_line_args() -> impl Iterator<Item = OsString> {
@@ -33,7 +70,7 @@ fn get_command_line_args() -> impl Iterator<Item = OsString> {
 }
 
 pub fn main() -> anyhow::Result<()> {
-    let args = Commands::parse_from(get_command_line_args());
+    let args = Cli::parse_from(get_command_line_args());
     //print build info
 
     let level_filter = match args.log_level {
@@ -45,9 +82,17 @@ pub fn main() -> anyhow::Result<()> {
         _ => LevelFilter::Trace,
     };
 
-    env_logger::Builder::new().filter_level(level_filter).init();
+    //env_logger::Builder::new().filter_level(level_filter).init();
+    env_logger::Builder::new().filter_level(LevelFilter::Trace).init();
 
-    scan_file::scan_file(args.file_path.as_str())?;
+    match args.commands {
+        Commands::Signature { malware_dir, out_path } => {
+            signatures::Signatures::create_msig_file(malware_dir.as_str(), out_path.as_str())?
+        },
+        Commands::Evaluate { file_path, sig_path } => {
+            scan_file::scan_file(file_path.as_str(), sig_path.as_str())?
+        },
+    }
 
     Ok(())
 }
