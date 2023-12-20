@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 signatures = { path = "../signatures"}
 
+hex = "~0"
 sha2 = "~0"
 snafu = "~0"
 log = "~0"

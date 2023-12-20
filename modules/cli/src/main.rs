@@ -73,7 +73,7 @@ pub fn main() -> anyhow::Result<()> {
     let args = Cli::parse_from(get_command_line_args());
     //print build info
 
-    let level_filter = match args.log_level {
+    let _level_filter = match args.log_level {
         0 => LevelFilter::Off,
         1 => LevelFilter::Error,
         2 => LevelFilter::Warn,

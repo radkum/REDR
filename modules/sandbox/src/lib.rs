@@ -1,6 +1,6 @@
 pub fn run_sandbox() {
     //todo
-    println!("SANDBOX: hello world!");
+    log::info!("SANDBOX: hello world!");
 }
 #[cfg(test)]
 mod tests {

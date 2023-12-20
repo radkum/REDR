@@ -6,6 +6,8 @@ use snafu::Snafu;
 pub enum SignatureError {
     #[snafu(display("{error}"))]
     IoError { error: std::io::Error },
+    #[snafu(display("Malset file must be divisible by 32"))]
+    InvalidMalsetSizeError {},
     #[snafu(display("Can't convert: {os_string:?} to String"))]
     OsStringError { os_string: OsString },
 }
