@@ -1,24 +1,35 @@
 pub mod error;
 
-use signatures::{
-    sha256_from_file_pointer,
-    signatures::Signatures,
+use std::{
+    collections::VecDeque,
+    fs::File,
+    io::{
+        Seek,
+        SeekFrom::Start,
+    },
 };
 
+use signatures::signatures::Signatures;
+
+const MAX_FILE_TO_SCAN: usize = 0x100;
 use crate::error::ScanError;
 
-pub fn run_scanner(file_path: &str, sigs: Signatures) -> Result<(), ScanError> {
-    log::debug!("SCANNER begin");
-    let mut file = std::fs::File::open(file_path)?;
-
-    let sha256 = sha256_from_file_pointer(&mut file)?;
-    let sha_str = hex::encode_upper(&sha256);
-
-    let res = if sigs.match_(sha256)? { "Matched" } else { "Not matched" };
-
-    println!("{res}, sha256: \"{sha_str}\"");
-
-    log::debug!("SCANNER end");
+pub fn scan_files(
+    files_queue: &mut VecDeque<File>,
+    signatures: Signatures,
+) -> Result<(), ScanError> {
+    for i in 1..MAX_FILE_TO_SCAN + 1 {
+        if let Some(mut f) = files_queue.pop_front() {
+            log::debug!("Start scanning {i} file");
+            let _file_info = signatures.eval_file(&mut f)?;
+            //do_action(_file_info)
+            f.seek(Start(0))?;
+            unpacker::unpack_file(&mut f, files_queue);
+        } else {
+            log::info!("No more files to scan");
+            break;
+        }
+    }
     Ok(())
 }
 

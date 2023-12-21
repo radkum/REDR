@@ -21,7 +21,7 @@ pub extern "C" fn redr_scan_file(file_path: FfiStr, error: Option<&mut ExternErr
     let error = error.unwrap();
 
     call_with_result(error, || {
-        scanner::run_scanner(file_path.into()).map(FfiWrapper::from).map_err(to_extern_error)
+        scanner::match_checksum(file_path.into()).map(FfiWrapper::from).map_err(to_extern_error)
     })
 }
 

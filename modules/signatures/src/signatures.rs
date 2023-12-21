@@ -1,12 +1,16 @@
 use std::{
     collections::BTreeSet,
+    fs::File,
     io::Write,
 };
 
 pub use crate::error::SignatureError;
-use crate::sha256::{
-    sha256_from_path,
-    Sha256,
+use crate::{
+    file_info::FileInfo,
+    sha256::{
+        sha256_from_path,
+        Sha256,
+    },
 };
 
 pub struct Signatures {
@@ -58,16 +62,24 @@ impl Signatures {
         Ok(())
     }
 
-    // pub(crate) fn create_rsig_file_from_msig(rsig_file_path: &str) -> Result<Self,
-    // SignaturesError> {     Ok(Self {
-    //         signatures: BTreeMap::from([(
-    //             "elo".to_string(),
-    //             FileInfo::Malware(MalwareInfo { desc: "test malware".to_string(), action:
-    // Action::Delete }),         )]),
-    //     })
-    // }
+    pub fn eval_file(&self, file: &mut File) -> Result<FileInfo, SignatureError> {
+        log::debug!("SCANNER begin");
+        let sha256 = crate::sha256::sha256_from_file_pointer(file)?;
+        let sha_str = hex::encode_upper(&sha256);
 
-    pub fn match_(&self, sha: Sha256) -> Result<bool, SignatureError> {
-        Ok(self.signatures.contains(&sha))
+        let file_info = self.match_(sha256)?;
+        println!("\"{sha_str}\" -> {:?}", &file_info);
+
+        log::debug!("SCANNER end");
+        Ok(file_info)
+    }
+
+    pub fn match_(&self, sha: Sha256) -> Result<FileInfo, SignatureError> {
+        let info = match self.signatures.contains(&sha) {
+            true => FileInfo::Clean,
+            false => FileInfo::Malicious,
+        };
+
+        Ok(info)
     }
 }

@@ -16,3 +16,9 @@
 //     Clean(u32),
 //     Malware(MalwareInfo),
 // }
+
+#[derive(Debug)]
+pub enum FileInfo {
+    Clean,
+    Malicious,
+}
