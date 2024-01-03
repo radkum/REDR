@@ -24,7 +24,10 @@ pub fn scan_files(
             let _file_info = signatures.eval_file(&mut f)?;
             //do_action(_file_info)
             f.seek(Start(0))?;
-            unpacker::unpack_file(&mut f, files_queue);
+            let res = arcom::unpack_file(f, files_queue);
+            if let Err(e) = res {
+                log::warn!("{e}");
+            }
         } else {
             log::info!("No more files to scan");
             break;

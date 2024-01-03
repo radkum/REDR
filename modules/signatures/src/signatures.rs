@@ -13,13 +13,26 @@ use crate::{
     },
 };
 
+//const MSET_MAGIC_U32: u32 = 0x5445354D; //M5ET
+const MSET_MAGIC: [u8; 4] = [0x4D, 0x35, 0x45, 0x54]; //M5ET
 pub struct Signatures {
     signatures: BTreeSet<Sha256>,
 }
 
 impl Signatures {
     pub(crate) fn read_sig_file(path: &str) -> Result<Self, SignatureError> {
+        //read magic
         let data_vec = std::fs::read(path)?;
+        if data_vec.len() <= std::mem::size_of_val(&MSET_MAGIC) {
+            return Err(SignatureError::InvalidMalsetSizeError {});
+        }
+
+        let data_vec = if let Some(data_vec) = data_vec.strip_prefix(&MSET_MAGIC) {
+            data_vec
+        } else {
+            return Err(SignatureError::InvalidMalsetSizeError {});
+        };
+
         if data_vec.len() % std::mem::size_of::<Sha256>() != 0 {
             return Err(SignatureError::InvalidMalsetSizeError {});
         }
@@ -58,6 +71,7 @@ impl Signatures {
         };
 
         let mut out = std::fs::File::create(out_file)?;
+        out.write_all(&MSET_MAGIC)?;
         out.write_all(&bytes)?;
         Ok(())
     }
@@ -76,8 +90,8 @@ impl Signatures {
 
     pub fn match_(&self, sha: Sha256) -> Result<FileInfo, SignatureError> {
         let info = match self.signatures.contains(&sha) {
-            true => FileInfo::Clean,
-            false => FileInfo::Malicious,
+            true => FileInfo::Malicious,
+            false => FileInfo::Clean,
         };
 
         Ok(info)

@@ -4,14 +4,20 @@ use std::{
         VecDeque,
     },
     fs::File,
-    io::Read,
+    io::{
+        Read,
+        Seek,
+        SeekFrom,
+    },
 };
 
+use common::redr;
+use shared_arcom::ExtractError;
+pub use shared_arcom::FileExtractor;
 lazy_static::lazy_static! {
     static ref MAGIC_U64: BTreeMap<u64, ArchiveType> = [(0xe11ab1a1e011cfd0, ArchiveType::OLE)].into_iter().collect();
     static ref MAGIC_U32: BTreeMap<u32, ArchiveType> = [(0x04034b50, ArchiveType::ZIP)].into_iter().collect();
 }
-pub use file_extractor::FileExtractor;
 
 #[derive(Debug, Copy, Clone)]
 enum ArchiveType {
@@ -58,22 +64,24 @@ impl ArchiveType {
 
     fn get_file_extractor(&self) -> Box<dyn FileExtractor> {
         match self {
-            ArchiveType::OLE => Box::new(ole_extractor::Ole {}),
+            ArchiveType::OLE => Box::new(ole_extractor::OleExtractor {}),
             ArchiveType::ZIP => todo!(),
         }
     }
 }
 
-pub fn unpack_file(file: &mut File, queue: &mut VecDeque<File>) {
-    let file_type = ArchiveType::get_file_type(file);
+pub fn unpack_file(mut file: File, queue: &mut VecDeque<File>) -> Result<(), ExtractError> {
+    let file_type = ArchiveType::get_file_type(&mut file);
 
     if let Some(file_type) = file_type {
         log::info!("ArchiveType: {:?}", &file_type);
         let file_extractor = file_type.get_file_extractor();
+        file.seek(SeekFrom::Start(0)).unwrap();
+        file_extractor.extract_files(redr::FileReader::new(file), queue)
     } else {
         log::info!("Not known archive");
+        Ok(())
     }
-    //ArchiveType::
 }
 
 #[cfg(test)]

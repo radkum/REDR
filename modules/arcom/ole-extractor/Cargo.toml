@@ -1,9 +1,13 @@
 [package]
-name = "ole_extractor"
+name = "ole-extractor"
 version = "0.1.0"
 edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-file_extractor = { path = "../file_extractor"}
+shared-arcom = { path = "../shared-arcom" }
+common = { path = "../../common"}
+
+log = "~0"
+ole = "~0"
