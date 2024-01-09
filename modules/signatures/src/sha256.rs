@@ -1,4 +1,4 @@
-use std::io::Read;
+use std::io;
 
 use sha3::Digest;
 
@@ -7,7 +7,7 @@ pub type Sha256 = [u8; SHA256_LEN];
 
 //pub type Sha256_String = Sha256;
 
-pub fn sha256_from_file_pointer(file: &mut std::fs::File) -> Result<Sha256, std::io::Error> {
+pub fn sha256_from_file_pointer(file: &mut impl io::Read) -> Result<Sha256, io::Error> {
     // Create a SHA-256 "hasher"
     let mut hasher = sha3::Sha3_256::new();
 
@@ -26,7 +26,7 @@ pub fn sha256_from_file_pointer(file: &mut std::fs::File) -> Result<Sha256, std:
     Ok(checksum_buf)
 }
 
-pub fn sha256_from_path(file_path: &str) -> Result<Sha256, std::io::Error> {
+pub fn sha256_from_path(file_path: &str) -> Result<Sha256, io::Error> {
     let mut file = std::fs::File::open(file_path)?;
     sha256_from_file_pointer(&mut file)
 }

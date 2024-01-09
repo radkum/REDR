@@ -3,9 +3,8 @@ use std::{
         BTreeMap,
         VecDeque,
     },
-    fs::File,
     io::{
-        Read,
+        self,
         Seek,
         SeekFrom,
     },
@@ -26,9 +25,10 @@ enum ArchiveType {
 }
 
 impl ArchiveType {
-    fn check_x_bytes_magic(f: &mut File, nbytes: usize) -> Option<Self> {
+    fn check_x_bytes_magic<T: io::Read + io::Seek>(f: &mut T, nbytes: usize) -> Option<Self> {
         match nbytes {
             8 => {
+                f.seek(SeekFrom::Start(0)).unwrap();
                 let mut bytes = [0u8; 8];
                 if let Err(e) = f.read_exact(&mut bytes) {
                     log::info!("{e}");
@@ -40,6 +40,7 @@ impl ArchiveType {
                 MAGIC_U64.get(&magic_u64).map(|ft| ft.clone())
             },
             4 => {
+                f.seek(SeekFrom::Start(0)).unwrap();
                 let mut bytes = [0u8; 4];
                 if let Err(e) = f.read_exact(&mut bytes) {
                     log::info!("{e}");
@@ -47,13 +48,14 @@ impl ArchiveType {
                 }
 
                 let magic_u32: u32 = u32::from_le_bytes(bytes);
+                //log::trace!("{:X}", magic_u32);
                 MAGIC_U32.get(&magic_u32).map(|ft| ft.clone())
             },
             _ => todo!(),
         }
     }
 
-    fn get_file_type(f: &mut File) -> Option<Self> {
+    fn get_file_type<T: io::Read + io::Seek>(f: &mut T) -> Option<Self> {
         //write more sophisticated algorithm
         let ft_option = Self::check_x_bytes_magic(f, 8);
         if ft_option.is_some() {
@@ -65,21 +67,23 @@ impl ArchiveType {
     fn get_file_extractor(&self) -> Box<dyn FileExtractor> {
         match self {
             ArchiveType::OLE => Box::new(ole_extractor::OleExtractor {}),
-            ArchiveType::ZIP => todo!(),
+            ArchiveType::ZIP => Box::new(zip_extractor::ZipExtractor {}),
         }
     }
 }
 
-pub fn unpack_file(mut file: File, queue: &mut VecDeque<File>) -> Result<(), ExtractError> {
+pub fn unpack_file(
+    mut file: redr::FileReader,
+    queue: &mut VecDeque<redr::FileReader>,
+) -> Result<(), ExtractError> {
     let file_type = ArchiveType::get_file_type(&mut file);
-
     if let Some(file_type) = file_type {
         log::info!("ArchiveType: {:?}", &file_type);
         let file_extractor = file_type.get_file_extractor();
         file.seek(SeekFrom::Start(0)).unwrap();
-        file_extractor.extract_files(redr::FileReader::new(file), queue)
+        file_extractor.extract_files(file, queue)
     } else {
-        log::info!("Not known archive");
+        //log::info!("Not known archive");
         Ok(())
     }
 }

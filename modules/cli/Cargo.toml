@@ -10,6 +10,7 @@ description = "Command line interface of REDR"
 sandbox = { path = "../sandbox"}
 scanner = { path = "../scanner"}
 signatures = { path = "../signatures"}
+common = { path = "../common"}
 
 anyhow = "~1"
 clap = { version = "~3", features = ["derive"] }

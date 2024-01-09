@@ -1,8 +1,9 @@
 use std::{
     collections::BTreeSet,
-    fs::File,
     io::Write,
 };
+
+use common::redr;
 
 pub use crate::error::SignatureError;
 use crate::{
@@ -76,15 +77,13 @@ impl Signatures {
         Ok(())
     }
 
-    pub fn eval_file(&self, file: &mut File) -> Result<FileInfo, SignatureError> {
-        log::debug!("SCANNER begin");
+    pub fn eval_file(&self, file: &mut redr::FileReader) -> Result<FileInfo, SignatureError> {
         let sha256 = crate::sha256::sha256_from_file_pointer(file)?;
         let sha_str = hex::encode_upper(&sha256);
 
         let file_info = self.match_(sha256)?;
         println!("\"{sha_str}\" -> {:?}", &file_info);
 
-        log::debug!("SCANNER end");
         Ok(file_info)
     }
 

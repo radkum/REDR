@@ -2,20 +2,20 @@ pub mod error;
 
 use std::{
     collections::VecDeque,
-    fs::File,
     io::{
         Seek,
         SeekFrom::Start,
     },
 };
 
+use common::redr;
 use signatures::signatures::Signatures;
 
 const MAX_FILE_TO_SCAN: usize = 0x100;
 use crate::error::ScanError;
 
 pub fn scan_files(
-    files_queue: &mut VecDeque<File>,
+    files_queue: &mut VecDeque<redr::FileReader>,
     signatures: Signatures,
 ) -> Result<(), ScanError> {
     for i in 1..MAX_FILE_TO_SCAN + 1 {

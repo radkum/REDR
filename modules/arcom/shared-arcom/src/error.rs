@@ -8,6 +8,12 @@ pub enum ExtractError {
     OleError { error: ole::Error },
 }
 
+impl From<std::io::Error> for ExtractError {
+    fn from(error: std::io::Error) -> Self {
+        Self::IoError { error }
+    }
+}
+
 impl From<ole::Error> for ExtractError {
     fn from(error: ole::Error) -> Self {
         Self::OleError { error }
