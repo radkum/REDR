@@ -8,7 +8,9 @@ edition = "2021"
 [dependencies]
 common = { path = "../common" }
 
+bincode = { version = "2.0.0-rc.3", features = ["serde", "alloc"]}
 hex = "~0"
 log = "~0"
+serde = { version = "~1", features = ["derive"] }
 sha3 = "~0"
-snafu = "~0"
+thiserror = "~1"

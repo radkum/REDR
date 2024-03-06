@@ -9,20 +9,28 @@ use std::{
 };
 
 use common::redr;
-use signatures::signatures::Signatures;
+use signatures::MalwareSet;
 
 const MAX_FILE_TO_SCAN: usize = 0x100;
 use crate::error::ScanError;
 
 pub fn scan_files(
     files_queue: &mut VecDeque<redr::FileReader>,
-    signatures: Signatures,
+    signatures: MalwareSet,
 ) -> Result<(), ScanError> {
     for i in 1..MAX_FILE_TO_SCAN + 1 {
         if let Some(mut f) = files_queue.pop_front() {
             log::debug!("Start scanning {i} file");
+
+            //signature-based scan
             let _file_info = signatures.eval_file(&mut f)?;
             //do_action(_file_info)
+
+            //heuristics
+            //f.seek(Start(0))?;
+            //let _file_info = heuristics.eval_file(&mut f)?;
+            //do_action(_file_info)
+
             f.seek(Start(0))?;
             let res = arcom::unpack_file(f, files_queue);
             if let Err(e) = res {

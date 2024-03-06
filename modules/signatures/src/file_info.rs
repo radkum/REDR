@@ -20,5 +20,5 @@
 #[derive(Debug)]
 pub enum FileInfo {
     Clean,
-    Malicious,
+    Malicious(String),
 }

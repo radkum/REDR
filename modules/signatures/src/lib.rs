@@ -1,15 +1,17 @@
-use crate::error::SignatureError;
-pub use crate::signatures::Signatures;
-
-mod error;
+pub mod error;
 mod file_info;
 pub mod sha256;
-pub mod signatures;
+mod malware_set;
 
 pub use sha256::sha256_from_file_pointer;
+use crate::error::MsetError;
+pub use crate::malware_set::MalwareSet;
+use crate::malware_set::MsetDeserializer;
+pub use crate::malware_set::MsetSerializer;
 
-pub fn get_signatures(sig_path: &str) -> Result<Signatures, SignatureError> {
-    Signatures::read_sig_file(sig_path)
+pub fn get_malware_set(mset_path: &str) -> Result<MalwareSet, MsetError> {
+    let des = MsetDeserializer::new(mset_path)?;
+    des.get_malset()
 }
 
 #[cfg(test)]

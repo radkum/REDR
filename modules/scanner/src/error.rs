@@ -1,4 +1,4 @@
-use signatures::signatures;
+use signatures::error::MsetError;
 use snafu::Snafu;
 
 #[derive(Snafu, Debug)]
@@ -6,7 +6,7 @@ pub enum ScanError {
     #[snafu(display("{error}"))]
     IoError { error: std::io::Error },
     #[snafu(display("{error}"))]
-    SignaturesError { error: signatures::SignatureError },
+    SignaturesError { error: MsetError },
     #[snafu(display("{error}"))]
     ExtractError { error: shared_arcom::ExtractError },
 }
@@ -17,8 +17,8 @@ impl From<std::io::Error> for ScanError {
     }
 }
 
-impl From<signatures::SignatureError> for ScanError {
-    fn from(arg: signatures::SignatureError) -> Self {
+impl From<MsetError> for ScanError {
+    fn from(arg: MsetError) -> Self {
         Self::SignaturesError { error: arg }
     }
 }
