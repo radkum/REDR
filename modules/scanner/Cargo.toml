@@ -6,12 +6,11 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-signatures = { path = "../signatures"}
 arcom = { path = "../arcom"}
-shared-arcom = { path = "../arcom/shared-arcom"}
-common = { path = "../common"}
+common = { path = "../common" }
+signatures = { path = "../signatures" }
 
 log = "~0"
 sha2 = "~0"
-snafu = "~0"
 thiserror = "~1"
+ansi_term = "~0"

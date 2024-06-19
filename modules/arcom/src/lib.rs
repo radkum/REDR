@@ -1,16 +1,9 @@
 use std::{
-    collections::{
-        BTreeMap,
-        VecDeque,
-    },
-    io::{
-        self,
-        Seek,
-        SeekFrom,
-    },
+    collections::{BTreeMap, VecDeque},
+    io::{self, Seek, SeekFrom},
 };
 
-use common::redr;
+use common::{redr, redr::RcMut};
 use shared_arcom::ExtractError;
 pub use shared_arcom::FileExtractor;
 lazy_static::lazy_static! {
@@ -74,14 +67,15 @@ impl ArchiveType {
 
 pub fn unpack_file(
     mut file: redr::FileReader,
-    queue: &mut VecDeque<redr::FileReader>,
+    original_file: RcMut<redr::FileInfo>,
+    queue: &mut VecDeque<redr::FileReaderAndInfo>,
 ) -> Result<(), ExtractError> {
     let file_type = ArchiveType::get_file_type(&mut file);
     if let Some(file_type) = file_type {
         log::info!("ArchiveType: {:?}", &file_type);
         let file_extractor = file_type.get_file_extractor();
         file.seek(SeekFrom::Start(0)).unwrap();
-        file_extractor.extract_files(file, queue)
+        file_extractor.extract_files(file, original_file, queue)
     } else {
         //log::info!("Not known archive");
         Ok(())

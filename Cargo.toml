@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
-members = ["modules/cli", "modules/scanner", "modules/sandbox", "modules/signatures",
-    "modules/arcom", "modules/ffi/scanner-ffi", "modules/common", "modules/ffi/common-ffi"]
-default-members = ["modules/cli", "modules/scanner", "modules/sandbox", "modules/arcom"]
+members = ["modules/cli", "modules/scanner", "modules/signatures",
+    "modules/arcom", "modules/common"]
+default-members = ["modules/cli", "modules/scanner", "modules/arcom"]
 
 [profile.release]
 debug = true

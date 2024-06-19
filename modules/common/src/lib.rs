@@ -1,5 +1,7 @@
-mod file_abstraction;
-pub use file_abstraction::redr;
+pub mod detection;
+pub mod redr;
+pub mod sha256_utils;
+
 #[cfg(test)]
 mod tests {
     use super::*;

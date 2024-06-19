@@ -1,13 +1,7 @@
-use std::{
-    collections::VecDeque,
-    io::Read,
-};
+use std::{collections::VecDeque, io::Read};
 
-use common::redr;
-use shared_arcom::{
-    ExtractError,
-    FileExtractor,
-};
+use common::{redr, redr::RcMut};
+use shared_arcom::{ExtractError, FileExtractor};
 
 pub struct OleExtractor {}
 
@@ -15,7 +9,8 @@ impl FileExtractor for OleExtractor {
     fn extract_files(
         &self,
         file: redr::FileReader,
-        queue: &mut VecDeque<redr::FileReader>,
+        original_file: RcMut<redr::FileInfo>,
+        queue: &mut VecDeque<redr::FileReaderAndInfo>,
     ) -> Result<(), ExtractError> {
         let parser = ole::Reader::new(file)?;
 
@@ -42,7 +37,10 @@ impl FileExtractor for OleExtractor {
             }
             // std::fs::write("trash\\".to_owned() + entry.name(), buffer.clone())?;
             let reader = redr::FileReader::from_buff(std::io::Cursor::new(buffer));
-            queue.push_front(reader);
+            queue.push_front((
+                reader,
+                redr::FileScanInfo::embedded_file(original_file.clone(), entry.name()),
+            ));
         }
         Ok(())
     }

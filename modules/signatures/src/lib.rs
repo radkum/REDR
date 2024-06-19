@@ -1,17 +1,38 @@
+extern crate core;
+
 pub mod error;
-mod file_info;
-pub mod sha256;
-mod malware_set;
+pub mod sig_store;
 
-pub use sha256::sha256_from_file_pointer;
-use crate::error::MsetError;
-pub use crate::malware_set::MalwareSet;
-use crate::malware_set::MsetDeserializer;
-pub use crate::malware_set::MsetSerializer;
+use crate::{error::SigSetError, sig_store::SignatureStore};
 
-pub fn get_malware_set(mset_path: &str) -> Result<MalwareSet, MsetError> {
-    let des = MsetDeserializer::new(mset_path)?;
-    des.get_malset()
+pub fn deserialize_sig_store<R: std::io::Read>(
+    io_reader: R,
+) -> Result<SignatureStore, SigSetError> {
+    SignatureStore::deserialize(io_reader)
+}
+
+pub fn deserialize_sig_store_from_path(set_path: &str) -> Result<SignatureStore, SigSetError> {
+    let file = std::fs::File::open(set_path)?;
+    deserialize_sig_store(file)
+}
+
+pub fn create_sig_store_from_path(set_path: &str) -> Result<SignatureStore, SigSetError> {
+    SignatureStore::from_yaml_signatures(set_path)
+}
+
+pub fn seralize_sig_store<W: std::io::Write>(
+    sig_store: SignatureStore,
+    out: &mut W,
+) -> Result<usize, SigSetError> {
+    sig_store.serialize(out)
+}
+
+pub fn seralize_sig_store_to_file(
+    sig_store: SignatureStore,
+    out_path: &str,
+) -> Result<usize, SigSetError> {
+    let mut file = std::fs::File::create(out_path)?;
+    seralize_sig_store(sig_store, &mut file)
 }
 
 #[cfg(test)]

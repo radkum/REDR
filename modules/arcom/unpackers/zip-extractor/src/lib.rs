@@ -1,13 +1,7 @@
-use std::{
-    collections::VecDeque,
-    io::Read,
-};
+use std::{collections::VecDeque, io::Read};
 
-use common::redr;
-use shared_arcom::{
-    ExtractError,
-    FileExtractor,
-};
+use common::{redr, redr::RcMut};
+use shared_arcom::{ExtractError, FileExtractor};
 
 pub struct ZipExtractor {}
 
@@ -15,7 +9,8 @@ impl FileExtractor for ZipExtractor {
     fn extract_files(
         &self,
         file: redr::FileReader,
-        queue: &mut VecDeque<redr::FileReader>,
+        original_file: RcMut<redr::FileInfo>,
+        queue: &mut VecDeque<redr::FileReaderAndInfo>,
     ) -> Result<(), ExtractError> {
         let mut archive = zip::ZipArchive::new(file).unwrap();
 
@@ -29,13 +24,16 @@ impl FileExtractor for ZipExtractor {
                 todo!()
             }
             let reader = redr::FileReader::from_buff(std::io::Cursor::new(buffer));
-            queue.push_front(reader);
+            queue.push_front((
+                reader,
+                redr::FileScanInfo::embedded_file(original_file.clone(), file.name()),
+            ));
 
-            let outpath = match file.enclosed_name() {
-                Some(path) => path.to_owned(),
-                None => continue,
-            };
-            log::trace!("{:?}", outpath.as_path().as_os_str());
+            // let outpath = match file.name() {
+            //     Some(path) => path.to_owned(),
+            //     None => continue,
+            // };
+            log::trace!("{:?}", file.name());
         }
 
         Ok(())

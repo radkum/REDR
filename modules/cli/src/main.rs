@@ -1,55 +1,45 @@
-mod scan_file;
+mod scan_path;
 
-use std::{
-    env,
-    ffi::OsString,
-};
+use std::{env, ffi::OsString};
 
-use clap::{
-    Parser,
-    Subcommand,
-};
-use log::LevelFilter;
-use signatures::MsetSerializer;
-
-#[derive(clap::Args)]
-pub struct Signature {
-    #[clap(short, long)]
-    pub malware_dir: String,
-    #[clap(short, long)]
-    pub out_path: String,
-}
-
+use ansi_term::Colour::{Green, Red};
+use clap::{Parser, Subcommand};
 // #[derive(clap::Args)]
-// pub struct Evaluate {
+// pub struct CompileRaw {
+//     /// Malware dir
 //     #[clap(short, long)]
-//     pub sig_path: String,
-//     #[clap(value_name = "PATH")]
-//     pub file_path: String,
+//     dir: String,
+//     /// Out path of sigset. Extenstion should be "sset"
+//     #[clap(short, long)]
+//     out_path: String,
 // }
+
 #[derive(clap::Args)]
-struct Compile {
-    #[clap(short, long)]
-    raw: bool,
-    #[clap(short, long)]
+pub struct Compile {
+    /// Signature directory
+    #[clap(long)]
     dir: String,
+    /// Output name/path of sigset. Extenstion should be "sset"
     #[clap(short, long)]
     out_path: String,
 }
 
-#[derive(clap::Args)]
-struct Unpack {
-    #[clap(short, long)]
-    mset: String,
-    #[clap(short, long)]
-    out_dir: String,
-}
-
 #[derive(Subcommand)]
 pub enum SignatureCommand {
+    //CompileRaw(CompileRaw),
     Compile(Compile),
     Unpack(Unpack),
-    //List(List),
+    //List(List), - todo in future
+}
+
+#[derive(clap::Args)]
+pub struct Unpack {
+    /// Path to sset
+    #[clap(short, long)]
+    set: String,
+    /// Directory where sigs should be unpack
+    #[clap(short, long)]
+    out_dir: String,
 }
 
 #[derive(Subcommand)]
@@ -59,15 +49,17 @@ enum Commands {
     Signature(SignatureCommand),
     /// Evaluate a suspected file
     Evaluate {
-        #[clap(short, long)]
-        sig_path: String,
+        /// Path to signature store
+        #[clap(short)]
+        sig_store_path: String,
+        /// Path to scan. Dir or file
         #[clap(value_name = "PATH")]
         file_path: String,
     },
 }
 
 #[derive(Parser)]
-#[clap(author, about)]
+#[command(author, about)]
 pub struct Cli {
     /// Increase log message verbosity
     #[arg(short, long, action = clap::ArgAction::Count)]
@@ -79,68 +71,69 @@ pub struct Cli {
     commands: Commands,
 }
 
-fn get_command_line_args() -> impl Iterator<Item = OsString> {
+pub fn main() -> anyhow::Result<()> {
     let mut args = env::args_os().collect::<Vec<_>>();
-    // Clap returns exit code 2 (parsing error), if no arguments provided.
-    // Invoking with --help provides same output as with no arguments, but the exit code is 0
-    // (success).
     if args.len() == 1 {
         args.push(OsString::from("--help"));
     }
-    args.into_iter()
-}
-
-pub fn main() -> anyhow::Result<()> {
-    let args = Cli::parse_from(get_command_line_args());
-    //print build info
-
-    let _level_filter = match args.log_level {
-        0 => LevelFilter::Off,
-        1 => LevelFilter::Error,
-        2 => LevelFilter::Warn,
-        3 => LevelFilter::Info,
-        4 => LevelFilter::Debug,
-        _ => LevelFilter::Trace,
+    let args = Cli::parse_from(args);
+    let _ = ansi_term::enable_ansi_support();
+    let log_level = match args.log_level {
+        0 => log::LevelFilter::Off,
+        1 => log::LevelFilter::Error,
+        2 => log::LevelFilter::Warn,
+        3 => log::LevelFilter::Info,
+        4 => log::LevelFilter::Debug,
+        _ => log::LevelFilter::Trace,
     };
 
-    //env_logger::Builder::new().filter_level(level_filter).init();
-    env_logger::Builder::new().filter_level(LevelFilter::Trace).init();
+    env_logger::Builder::new().filter_level(log_level).init();
 
     match args.commands {
-        Commands::Signature ( signature_command ) => {
-            match signature_command {
-                SignatureCommand::Compile(args) => {
-                    if args.raw {
-                        let malset = signatures::MalwareSet::from_dir(args.dir.as_str())?;
-                        let ser = MsetSerializer::new(&malset);
-                        ser.serialize(&args.out_path)?;
-                    } else {
-                        //let malset = signatures::MalwareSet::from_signatures(args.dir.as_str())?;
-                        //let ser = MsetSerializer::new(&malset);
-                        //ser.serialize(&args.out_path)?;
-                    }
+        Commands::Signature(signature_command) => match signature_command {
+            SignatureCommand::Compile(args) => {
+                let sig_store = signatures::create_sig_store_from_path(args.dir.as_str())?;
+                match signatures::seralize_sig_store_to_file(sig_store, args.out_path.as_str()) {
+                    Ok(number) => {
+                        println!("{} Compiled signatures: {number}", Green.paint("SUCCESS!"))
+                    },
+                    Err(e) => log::error!("Failed to compile sigs. Err: {e}"),
                 }
-                SignatureCommand::Unpack(args) => {
-                    let malset = signatures::get_malware_set(args.mset.as_str())?;
-
-                    if std::path::Path::new(&args.out_dir).exists() {
-                        let md = std::fs::metadata(&args.out_dir)?;
-                        if md.is_file() {
-                            //error
-                            todo!()
-                        }
-
-                        let _ = std::fs::remove_dir(&args.out_dir);
-                    }
-
-                    std::fs::create_dir(&args.out_dir).unwrap();
-                    malset.unpack_to_dir(args.out_dir);
-                }
-            }
-
+            },
+            SignatureCommand::Unpack(_args) => {
+                todo!()
+                // let sha_set = signatures::deserialize_sha_set_from_path(args.sha_set.as_str())?;
+                // if std::path::Path::new(&args.out_dir).exists() {
+                //     let md = std::fs::metadata(&args.out_dir)?;
+                //     if md.is_file() {
+                //         let info = format!("{} is a file!", &args.out_dir);
+                //         let mut cmd = Cli::command();
+                //         cmd.error(ErrorKind::ArgumentConflict, info).exit();
+                //     }
+                //
+                //     let _ = std::fs::remove_dir(&args.out_dir);
+                // }
+                //
+                // let res = std::fs::create_dir(&args.out_dir);
+                // if let Err(e) = res {
+                //     log::warn!("Failed to create dir: {}. Err: {e}", &args.out_dir);
+                // } else {
+                //     match sha_set.unpack_to_dir(&args.out_dir) {
+                //         Ok(number) => println!("SUCCESS to unpack shaset. Count: {number}"),
+                //         Err(e) => log::error!("Failed to create dir: {}. Err: {e}", &args.out_dir),
+                //     }
+                // }
+            },
+            // SignatureCommand::CompileRaw(args) => {
+            //     let sha_set = ShaSet::from_dir(args.dir.as_str())?;
+            //     let ser = sha_set.to_set_serializer();
+            //     ser.serialize(&args.out_path, ShaSet::SET_MAGIC_U32)?;
+            // },
         },
-        Commands::Evaluate { file_path, sig_path } => {
-            scan_file::scan_file(file_path.as_str(), sig_path.as_str())?
+        Commands::Evaluate { sig_store_path, file_path } => {
+            if let Err(e) = scan_path::scan_path(file_path.as_str(), sig_store_path) {
+                println!("{} Cause: {e}", Red.paint("ERROR!"))
+            }
         },
     }
 

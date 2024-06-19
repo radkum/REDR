@@ -1,13 +1,14 @@
 mod error;
+
 use std::collections::VecDeque;
 
-use common::redr;
+use common::{redr, redr::RcMut};
 pub use error::ExtractError;
-
 pub trait FileExtractor {
     fn extract_files(
         &self,
         file: redr::FileReader,
-        queue: &mut VecDeque<redr::FileReader>,
+        original_file: RcMut<redr::FileInfo>,
+        queue: &mut VecDeque<redr::FileReaderAndInfo>,
     ) -> Result<(), ExtractError>;
 }

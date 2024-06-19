@@ -1,44 +1,40 @@
 use std::ffi::OsString;
 
+use common::sha256_utils;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum MsetError {
-    #[error("IoError: {0}")]
-    IoError(#[from] std::io::Error),
-    #[error("Can't convert to String")]
-    OsStringError(),
-    #[error("BincodeDeserializeError: {0}")]
+pub enum SigSetError {
+    #[error("Bincode deserialize error: {0}")]
     BincodeDeserializeError(#[from] bincode::error::DecodeError),
-    #[error("BincodeSerializeError: {0}")]
+    #[error("Bincode serialize error: {0}")]
     BincodeSerializeError(#[from] bincode::error::EncodeError),
-    #[error("Verification of file magic failed. Found '{current}'")]
+    #[error("FileObjectError: {0}")]
+    FileObjectError(#[from] object::Error),
+    #[error("Incorrect magic. Found '{current}'")]
     IncorrectMagicError { current: String },
-    #[error("Verification of file checksum failed. Expected '{expected}' but found '{current}'")]
-    MsetChecksumError { current: String, expected: String },
+    #[error("Incorrect checksum. Expected '{expected}' but found '{current}'")]
+    IncorrectChecksumError { current: String, expected: String },
     #[error("Incorrect file size. Size: '{size}'")]
     IncorrectFileSizeError { size: u64 },
-    #[error("Incorrect hs database size. Size: '{size}'")]
+    #[error("Incorrect signature size. Size: '{size}'")]
     IncorrectSignatureSizeError { size: u32 },
+    #[error("Incorrect signature. Info: '{info}'")]
+    IncorrectSignatureError { info: String },
+    #[error("IoError: {0}")]
+    IoError(#[from] std::io::Error),
+    #[error("Given property doesn't exist in map: {0}")]
+    NoSuchPropertyError(String),
+    #[error("Can't convert OsString to String. After to_string_lossy(): {0}")]
+    OsStringError(String),
+    #[error("Serde yaml error: {0}")]
+    SerdeYamlError(#[from] serde_yaml::Error),
+    #[error("Sha Error: {0}")]
+    ShaError(#[from] sha256_utils::ShaError),
 }
 
-// #[derive(Snafu, Debug)]
-// pub enum SignatureError {
-//     #[snafu(display("{error}"))]
-//     IoError { error: std::io::Error },
-//     #[snafu(display("Malset file must be divisible by 32"))]
-//     InvalidMalsetSizeError {},
-//     #[snafu(display("Can't convert: {os_string:?} to String"))]
-//     OsStringError { os_string: OsString },
-// }
-//
-// impl From<std::io::Error> for SignatureError {
-//     fn from(arg: std::io::Error) -> Self {
-//         Self::IoError { error: arg }
-//     }
-// }
-impl From<OsString> for MsetError {
+impl From<OsString> for SigSetError {
     fn from(arg: OsString) -> Self {
-        Self::OsStringError()
+        Self::OsStringError(arg.to_string_lossy().into())
     }
 }
